@@ -2,7 +2,8 @@
 import { bbox as turfBbox, booleanPointInPolygon, feature, point } from "@turf/turf";
 import type { MultiPolygon, Polygon } from "geojson";
 import { classifyCategories } from "./gemini";
-import { restaurantsInBox, type BBox } from "./kakao";
+import { hasKakao, kakaoRestaurantsInBox, type BBox } from "./kakao";
+import { osmRestaurantsInBox } from "./overpass";
 import { supabaseAdmin } from "./supabase-server";
 import type { Area, PayStatus, Restaurant } from "./types";
 
@@ -37,24 +38,13 @@ async function cachedRestaurants(areaKey: string): Promise<Restaurant[]> {
 
 async function collect(area: Area): Promise<Restaurant[]> {
   const shape = feature(area.geom as Polygon | MultiPolygon);
-  const places = await restaurantsInBox(turfBbox(shape) as BBox);
+  const box = turfBbox(shape) as BBox;
+  // 카카오 키가 있으면 카카오(식당 정보가 풍부), 없으면 오픈스트리트맵
+  const found = hasKakao() ? await kakaoRestaurantsInBox(box) : await osmRestaurantsInBox(box);
 
   const byId = new Map<string, Restaurant>();
-  for (const p of places) {
-    const lng = Number(p.x);
-    const lat = Number(p.y);
-    if (!booleanPointInPolygon(point([lng, lat]), shape)) continue;
-    byId.set(p.id, {
-      id: p.id,
-      name: p.place_name,
-      category: p.category_name,
-      address: p.address_name || null,
-      road_address: p.road_address_name || null,
-      phone: p.phone || null,
-      lat,
-      lng,
-      place_url: p.place_url || null,
-    });
+  for (const r of found) {
+    if (booleanPointInPolygon(point([r.lng, r.lat]), shape)) byId.set(r.id, r);
   }
   const restaurants = [...byId.values()];
 
@@ -111,7 +101,7 @@ async function keepRealRestaurants(restaurants: Restaurant[]): Promise<Restauran
     }
   }
 
-  // 판정을 못 받은 업종은 일단 보여준다 (카카오 FD6 자체가 음식점 분류이므로)
+  // 판정을 못 받은 업종은 일단 보여준다 (수집 단계에서 이미 음식점만 골랐으므로)
   return restaurants.filter((r) => verdicts.get(r.category) ?? true);
 }
 

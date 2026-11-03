@@ -1,6 +1,7 @@
 // 행정동 경계(vuski/admdongkor)를 받아 Supabase admdong 테이블에 넣는다.
 // 사용법: .env.local 을 채운 뒤 `npm run seed:admdong`
 import { createClient } from "@supabase/supabase-js";
+import { bbox } from "@turf/turf";
 import { config } from "dotenv";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 
@@ -26,12 +27,19 @@ if (!existsSync(FILE)) {
 }
 
 const { features } = JSON.parse(readFileSync(FILE, "utf8"));
-const rows = features.map((f) => ({
-  code: f.properties.adm_cd2,
-  name: f.properties.adm_nm.split(" ").at(-1),
-  full_name: f.properties.adm_nm,
-  geom: f.geometry,
-}));
+const rows = features.map((f) => {
+  const [min_lng, min_lat, max_lng, max_lat] = bbox(f);
+  return {
+    code: f.properties.adm_cd2,
+    name: f.properties.adm_nm.split(" ").at(-1),
+    full_name: f.properties.adm_nm,
+    geom: f.geometry,
+    min_lng,
+    min_lat,
+    max_lng,
+    max_lat,
+  };
+});
 
 const supabase = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
 const BATCH = 100;

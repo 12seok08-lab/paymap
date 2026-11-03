@@ -48,7 +48,18 @@ export async function POST(req: Request): Promise<NextResponse<SearchResponse>> 
     return NextResponse.json({ type: "result", area, cuisine, restaurants, statuses });
   } catch (e) {
     console.error(e);
-    const message = e instanceof Error ? e.message : "알 수 없는 오류";
-    return NextResponse.json({ type: "error", message }, { status: 500 });
+    return NextResponse.json({ type: "error", message: describeError(e) }, { status: 500 });
   }
+}
+
+// Supabase 는 오류를 Error 가 아닌 { message, hint, code } 객체로 주기도 한다
+function describeError(e: unknown): string {
+  if (e && typeof e === "object") {
+    const { message, hint, code } = e as { message?: unknown; hint?: unknown; code?: unknown };
+    if (typeof message === "string" && message) {
+      const extra = [code, hint].filter((v) => typeof v === "string" && v).join(" / ");
+      return extra ? `${message} (${extra})` : message;
+    }
+  }
+  return typeof e === "string" ? e : `알 수 없는 오류: ${JSON.stringify(e)}`;
 }

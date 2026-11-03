@@ -161,7 +161,7 @@ export default function Home() {
           {selected.place_url && (
             <p>
               <a href={selected.place_url} target="_blank" rel="noreferrer">
-                카카오맵에서 보기
+                {selected.place_url.includes("openstreetmap") ? "오픈스트리트맵에서 보기" : "카카오맵에서 보기"}
               </a>
             </p>
           )}

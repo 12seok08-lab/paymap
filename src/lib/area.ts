@@ -1,7 +1,8 @@
 // 입력(동 이름 / 도로명 / 지명)을 지도 위의 구역(다각형)으로 바꾼다
-import { bbox as turfBbox, buffer, multiLineString } from "@turf/turf";
-import type { Feature, Geometry, LineString } from "geojson";
-import { regionsAt, searchKeyword } from "./kakao";
+import { booleanPointInPolygon, bbox as turfBbox, buffer, feature, multiLineString, point } from "@turf/turf";
+import type { Feature, Geometry, LineString, MultiPolygon, Polygon } from "geojson";
+import { hasKakao, kakaoGeocode } from "./kakao";
+import { geocode } from "./nominatim";
 import { roadsNamed } from "./overpass";
 import { supabaseAdmin } from "./supabase-server";
 import type { Area, AreaCandidate } from "./types";
@@ -29,13 +30,11 @@ export async function resolveArea(input: string): Promise<Resolution> {
     if (found.length) return finish(found);
   }
 
-  // 지명(역, 건물, 상권 등): 카카오로 위치를 찾고 그 위치의 행정동을 구역으로 쓴다
-  const [place] = await searchKeyword(name);
+  // 지명(역, 건물, 상권 등): 위치를 찾고 그 위치의 행정동을 구역으로 쓴다
+  const place = hasKakao() ? await kakaoGeocode(name) : await geocode(name);
   if (!place) return { type: "notFound" };
-  const { h } = await regionsAt(Number(place.x), Number(place.y));
-  if (!h) return { type: "notFound" };
-  const dong = await dongByCode(h.code);
-  return dong ? finish([dong]) : { type: "notFound" };
+  const dong = await dongAt(place.lng, place.lat);
+  return dong ? finish([dongToArea(dong)]) : { type: "notFound" };
 }
 
 export async function getAreaByKey(key: string): Promise<Area | null> {
@@ -72,14 +71,22 @@ async function dongsNamed(name: string): Promise<Area[]> {
   return (data as DongRow[]).map(dongToArea);
 }
 
-async function dongByCode(code: string): Promise<Area | null> {
+// 좌표가 속한 행정동: 경계 사각형으로 후보를 좁힌 뒤 실제 다각형으로 확인한다
+async function dongAt(lng: number, lat: number): Promise<DongRow | null> {
   const { data, error } = await supabaseAdmin()
     .from("admdong")
     .select("code, full_name, geom")
-    .eq("code", code)
-    .maybeSingle();
+    .lte("min_lng", lng)
+    .gte("max_lng", lng)
+    .lte("min_lat", lat)
+    .gte("max_lat", lat);
   if (error) throw error;
-  return data ? dongToArea(data as DongRow) : null;
+  const here = point([lng, lat]);
+  return (
+    (data as DongRow[]).find((d) =>
+      booleanPointInPolygon(here, feature(d.geom as Polygon | MultiPolygon)),
+    ) ?? null
+  );
 }
 
 // 같은 이름의 도로가 여러 도시에 있을 수 있으므로(예: 중앙대로)
@@ -100,9 +107,10 @@ async function roadAreas(name: string): Promise<Area[]> {
   const bySgg = new Map<string, { label: string; lines: Feature<LineString>[] }>();
   for (const group of groups) {
     const [lng, lat] = group[0].geometry.coordinates[0];
-    const { b } = await regionsAt(lng, lat);
-    const sgg = b?.code.slice(0, 5) ?? `${lng.toFixed(2)},${lat.toFixed(2)}`;
-    const label = b ? `${b.region_1depth_name} ${b.region_2depth_name} ${name}` : name;
+    const dong = await dongAt(lng, lat);
+    // 행정동 코드 앞 5자리가 시군구, 전체 이름에서 동을 뺀 것이 "시도 시군구"
+    const sgg = dong?.code.slice(0, 5) ?? `${lng.toFixed(2)},${lat.toFixed(2)}`;
+    const label = dong ? `${dong.full_name.split(" ").slice(0, -1).join(" ")} ${name}` : name;
     const entry = bySgg.get(sgg) ?? { label, lines: [] };
     entry.lines.push(...group);
     bySgg.set(sgg, entry);

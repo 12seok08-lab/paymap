@@ -14,7 +14,7 @@
 | 지도 화면 | 오픈스트리트맵 + Leaflet | 필요 없음 |
 | 도로 모양 | 오픈스트리트맵 Overpass API | 필요 없음 |
 | 행정동 경계 | [vuski/admdongkor](https://github.com/vuski/admdongkor) (Supabase에 한 번 적재) | 필요 없음 |
-| 식당 목록 · 지명 검색 | 카카오 로컬 API | REST API 키 (무료) |
+| 식당 목록 · 지명 검색 | 카카오 로컬 API, 키가 없으면 오픈스트리트맵(Overpass, Nominatim) | 선택 (카카오 REST 키, 무료) |
 | 자연어 해석 · 식당 아닌 업종 거르기 | Gemini API | API 키 |
 | DB · 실시간 공유 | Supabase | 프로젝트 URL과 키 |
 | 배포 | Vercel | |
@@ -23,7 +23,7 @@
 
 1. **Supabase**: 프로젝트를 만든 뒤 SQL Editor에서 [supabase/schema.sql](supabase/schema.sql)을 실행합니다.
 2. **키 준비**: `.env.example`을 `.env.local`로 복사하고 값을 채웁니다.
-   - 카카오: [developers.kakao.com](https://developers.kakao.com) → 애플리케이션 추가 → REST API 키. 앱 설정에서 **카카오맵(로컬) 사용 설정**을 켜야 합니다.
+   - 카카오 (선택): [developers.kakao.com](https://developers.kakao.com) → 애플리케이션 추가 → REST API 키. 앱 설정에서 **카카오맵(로컬) 사용 설정**을 켜야 합니다. 비워 두면 오픈스트리트맵 식당 데이터를 쓰는데, 한국은 등록된 식당이 적습니다.
    - Gemini: [aistudio.google.com/apikey](https://aistudio.google.com/apikey)
 3. **행정동 경계 적재** (한 번만, 약 35MB 다운로드):
    ```bash

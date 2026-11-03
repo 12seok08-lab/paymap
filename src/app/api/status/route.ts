@@ -11,7 +11,15 @@ export async function POST(req: Request) {
   }
 
   const db = supabaseAdmin();
-  const { data: exists } = await db.from("restaurants").select("id").eq("id", restaurantId).maybeSingle();
+  const { data: exists, error: findError } = await db
+    .from("restaurants")
+    .select("id")
+    .eq("id", restaurantId)
+    .maybeSingle();
+  if (findError) {
+    console.error(findError);
+    return NextResponse.json({ message: findError.message }, { status: 500 });
+  }
   if (!exists) return NextResponse.json({ message: "없는 식당입니다" }, { status: 404 });
 
   const { error } = await db
