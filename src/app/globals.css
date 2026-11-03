@@ -1,0 +1,213 @@
+:root {
+  --bg: #ffffff;
+  --text: #111827;
+  --muted: #6b7280;
+  --border: #e5e7eb;
+  --accent: #2563eb;
+  --neon: #39ff14;
+  --pin: #f97316;
+  --gray: #9ca3af;
+  --danger: #dc2626;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+}
+
+.app {
+  position: relative;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+.top {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+  z-index: 1000;
+}
+
+.search {
+  display: flex;
+  gap: 8px;
+}
+
+.search input {
+  flex: 1;
+  min-width: 0;
+  padding: 10px 12px;
+  font-size: 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.search button,
+.candidates button,
+.actions button {
+  padding: 10px 14px;
+  font-size: 15px;
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.search button {
+  background: var(--accent);
+  color: #fff;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.summary,
+.error {
+  margin: 8px 0 0;
+  font-size: 14px;
+}
+
+.error {
+  color: var(--danger);
+}
+
+.candidates p {
+  margin: 8px 0 4px;
+  font-size: 14px;
+}
+
+.candidates ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.candidates button {
+  background: #eef2ff;
+  color: var(--accent);
+}
+
+.map {
+  flex: 1;
+}
+
+/* 식당 마커 */
+.pin {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--pin);
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.3);
+}
+
+/* 비플페이 가능: 깜빡이는 형광 테두리 */
+.pin--available {
+  border: 3px solid var(--neon);
+  animation: neon-blink 1s ease-in-out infinite;
+}
+
+@keyframes neon-blink {
+  0%,
+  100% {
+    border-color: var(--neon);
+    box-shadow: 0 0 6px 3px var(--neon);
+  }
+  50% {
+    border-color: transparent;
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+
+/* 비플페이 불가능: 회색 */
+.pin--unavailable {
+  background: var(--gray);
+  border-color: #e5e7eb;
+}
+
+.pin--selected {
+  transform: scale(1.4);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pin--available {
+    animation-duration: 2s;
+  }
+}
+
+/* 식당 정보 패널 */
+.panel {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: 16px;
+  max-width: 420px;
+  margin: 0 auto;
+  padding: 16px;
+  background: var(--bg);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  z-index: 1000;
+}
+
+.panel h2 {
+  margin: 0 24px 4px 0;
+  font-size: 18px;
+}
+
+.panel p {
+  margin: 4px 0;
+  font-size: 14px;
+}
+
+.panel .category,
+.panel .current {
+  color: var(--muted);
+}
+
+.panel .close {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  border: 0;
+  background: none;
+  font-size: 22px;
+  cursor: pointer;
+  color: var(--muted);
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.actions button {
+  flex: 1;
+  background: #f3f4f6;
+  color: var(--text);
+  border: 2px solid transparent;
+}
+
+.actions .yes.on {
+  background: #ecfccb;
+  border-color: var(--neon);
+}
+
+.actions .no.on {
+  background: #e5e7eb;
+  border-color: var(--gray);
+}
